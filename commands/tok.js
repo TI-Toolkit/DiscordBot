@@ -1,0 +1,101 @@
+const tokData = require("../tokens.json");
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+
+const capitalizeFirstLetter = function(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+const tokNamesOnly = [];
+const tokDataByName = {};
+for (const [bytes, data] of Object.entries(tokData)) {
+    data.bytes = bytes;
+    tokDataByName[data.name] = data;
+    tokNamesOnly.push(`${data.name} (${bytes})`)
+}
+tokNamesOnly.sort((a, b) => a.localeCompare(b))
+
+module.exports = {
+    data: new SlashCommandBuilder()
+        .setName('tok')
+        .setDescription('Gives token info')
+        .addStringOption(option =>
+            option.setName('token')
+                .setDescription('Name of the token, or its 0xNNNN hex bytes')
+                .setRequired(true)
+                .setAutocomplete(true)),
+
+    async autocomplete(interaction) {
+        const focusedValue = interaction.options.getFocused();
+        const filtered = tokNamesOnly.filter(choice => choice.toLowerCase().includes(focusedValue.toLowerCase())).slice(0, 10);
+        await interaction.respond(
+            filtered.map(choice => ({ name: choice, value: choice.replace(/ \(.{4,6}\)$/gmu,'') })),
+        );
+    },
+
+    async execute(interaction) {
+        const tokWanted = interaction.options.getString('token');
+        const token = structuredClone(tokData[tokWanted] ?? tokDataByName[tokWanted] ?? null);
+        if (token) {
+            const embeds = [];
+            for (const s of token.syntaxes) {
+                let args = "";
+                for (const arg of s.arguments) {
+                    args += `**\`${arg[0]}\`**: ${arg[1]}\n`;
+                }
+                const fields = [{
+                    name: "Location",
+                    value: s.location.length ? ("`" + s.location.join('` ➔ `') + "`") : '?',
+                    inline: false
+                }];
+                if ('comment' in s && s.comment.length) {
+                    fields.push({
+                        name: "Comment",
+                        value: s.comment,
+                        inline: false
+                    });
+                }
+                embeds.push(new EmbedBuilder()
+                    .setTitle(`\`${s.syntax}\``)
+                    .setDescription(s.description.length ? s.description : '(No description)')
+                    .addFields(...fields));
+            }
+            let body = `**Bytes**: **\`${token.bytes}\`**\n`;
+            body += `**Name**: **\`${token.name}\`**\n`;
+
+            if ('since' in token || 'until' in token)
+            {
+                body += `**History**:\n`;
+                const sinceUntilLines = [];
+                const multipleSinceUntil = Object.keys(token.since ?? {}).length > 1 || Object.keys(token.until ?? {}).length > 1;
+                // handle potential renamings...
+                for (let [model, sinceVer] of Object.entries(token.since ?? [])) {
+                    let untilVer = token.until && token.until[model];
+                    if (untilVer) {
+                        let sinceNameInVer, untilNameInVer;
+                        [sinceVer, sinceNameInVer = token.name] = sinceVer.split('|');
+                        [untilVer, untilNameInVer = token.name] = untilVer.split('|');
+                        if (sinceVer === untilVer && sinceNameInVer !== untilNameInVer) {
+                            // console.log(`renaming detected in ${model}, at version ${sinceVer}: [${untilNameInVer}] => [${sinceNameInVer}]`);
+                            sinceUntilLines.push(`- **${model}** ${sinceVer}: Renamed \`${untilNameInVer.replace(/`/g, '\\`')}\` to \`${sinceNameInVer.replace(/`/g, '\\`')}\``);
+                            delete token.since[model];
+                            delete token.until[model];
+                        }
+                    }
+                }
+                // process each remaining item
+                for (const [which, action] of Object.entries({ since: 'added', until: 'removed' })) {
+                    for (const [model, ver] of Object.entries(token[which] ?? [])) {
+                        const [actualVer, nameInVer = token.name] = ver.split('|');
+                        sinceUntilLines.push(`- **${model}** ${actualVer}: ` + (multipleSinceUntil ? `\`${nameInVer.replace(/`/g, '\\`')}\` ` : '') + (multipleSinceUntil ? action : capitalizeFirstLetter(action)));
+                    }
+                }
+
+                sinceUntilLines.sort((a, b) => a.localeCompare(b)).forEach((line) => { body += line + '\n'; });
+            }
+
+            await interaction.reply({ embeds: embeds, content: body });
+        } else {
+            await interaction.reply(`Could not find token "${tokWanted}"!`);
+        }
+    },
+};
