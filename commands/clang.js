@@ -51,7 +51,7 @@ module.exports = {
 
     async execute(interaction) {
         if (interaction.user.tag !== 'adriweb') {
-            if ((interaction.guildId != 432891584451706892)
+            if ((interaction.guildId !== '432891584451706892')
                 || !interaction.member.roles.cache.some(r => r.name === "Toolchain developer")) {
                 await interaction.reply("Not available yet");
                 return;
