@@ -78,7 +78,8 @@ module.exports = {
         }
 
         const origCode = code;
-        code = `#include <stdint.h>
+        if (target === 'ez80') {
+            code = `#include <stdint.h>
 #include <tice.h>
 typedef uint8_t u8;
 typedef int8_t i8;
@@ -93,6 +94,7 @@ typedef int48_t i48;
 typedef uint64_t u64;
 typedef int64_t i64;
 ` + code;
+        }
         fs.writeFileSync(tmpFile, code);
 
         let asmOutput = "";
