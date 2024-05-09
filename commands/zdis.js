@@ -32,7 +32,7 @@ module.exports = {
     async execute(interaction) {
         await interaction.deferReply();
 
-        const target = interaction.options.getString('target') ?? 'ez80';
+        const arch = interaction.options.getString('arch') ?? 'ez80';
         const bytes = interaction.options.getString('bytes').trim();
 
         if (!/^[0-9A-Fa-f]+$/g.test(bytes)) {
@@ -48,10 +48,10 @@ module.exports = {
 
         fs.writeFileSync(tmpFile, Buffer.from(bytes, "hex"))
 
-        const destStyle = (target === 'ez80') ? 'explicit-dest' : 'implicit-dest';
+        const destStyle = (arch === 'ez80') ? 'explicit-dest' : 'implicit-dest';
 
         let asmOutput = "";
-        const cmd = `./zdis/cli --${target} --${destStyle} --mnemonic-tab ${tmpFile}`;
+        const cmd = `./zdis/cli --${arch} --${destStyle} --mnemonic-tab ${tmpFile}`;
 
         exec(cmd, (err, stdout, stderr) => {
             // if (stdout.length) console.log('[zdisBot] stdout is:' + stdout);
@@ -62,7 +62,7 @@ module.exports = {
 
             fs.unlinkSync(tmpFile);
             if (asmOutput.length) {
-                interaction.editReply(`\`${target}\` disassembly of \`${bytes}\`:\n\`\`\`avrasm\n${asmOutput.trimEnd()}\`\`\``);
+                interaction.editReply(`\`${arch}\` disassembly of \`${bytes}\`:\n\`\`\`avrasm\n${asmOutput.trimEnd()}\`\`\``);
             } else {
                 interaction.editReply(`Error getting the disasm`);
             }
