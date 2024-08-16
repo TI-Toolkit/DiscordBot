@@ -42,11 +42,14 @@ module.exports = {
                 for (const arg of s.arguments) {
                     args += `**\`${arg[0]}\`**: ${arg[1]}\n`;
                 }
-                const fields = [{
-                    name: "Location",
-                    value: s.location.length ? ("`" + s.location.join('` ➔ `') + "`") : '?',
-                    inline: false
-                }];
+                const fields = [];
+                if ('location' in s && s.location.length) {
+                    fields.push({
+                        name: "Location",
+                        value: "`" + s.location.join('` ➔ `') + "`",
+                        inline: false
+                    })
+                }
                 if ('comment' in s && s.comment.length) {
                     fields.push({
                         name: "Comment",
