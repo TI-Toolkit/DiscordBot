@@ -5,14 +5,11 @@ const capitalizeFirstLetter = function(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-const tokNamesOnly = [];
 const tokDataByName = {};
 for (const [bytes, data] of Object.entries(tokData)) {
     data.bytes = bytes;
     tokDataByName[data.name] = data;
-    tokNamesOnly.push(`${data.name} (${bytes})`)
 }
-tokNamesOnly.sort((a, b) => a.localeCompare(b))
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -25,10 +22,16 @@ module.exports = {
                 .setAutocomplete(true)),
 
     async autocomplete(interaction) {
-        const focusedValue = interaction.options.getFocused();
-        const filtered = tokNamesOnly.filter(choice => choice.toLowerCase().includes(focusedValue.toLowerCase())).slice(0, 10);
+        const wanted = interaction.options.getFocused().toLowerCase();
+        let filtered = [];
+        for (const [name, tok] of Object.entries(tokDataByName)) {
+            if (name.trim().length && name.toLowerCase().includes(wanted) || tok.accessibleName?.toLowerCase().includes(wanted)) {
+                filtered.push(tok)
+            }
+        }
+        filtered = filtered.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 10);
         await interaction.respond(
-            filtered.map(choice => ({ name: choice, value: choice.replace(/ \(.{4,6}\)$/gmu,'') })),
+            filtered.map(choice => ({ name: `${choice.name} (${choice.bytes})`, value: choice.bytes })),
         );
     },
 
@@ -64,6 +67,11 @@ module.exports = {
             }
             let body = `**Bytes**: **\`${token.bytes}\`**\n`;
             body += `**Name**: **\`${token.name}\`**\n`;
+
+            if ('accessibleName' in token && token.accessibleName !== token.name)
+            {
+                body += `**Accessible**: **\`${token.accessibleName}\`**\n`;
+            }
 
             if ('since' in token || 'until' in token)
             {
