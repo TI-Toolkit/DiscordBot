@@ -25,7 +25,10 @@ module.exports = {
         const wanted = interaction.options.getFocused().toLowerCase();
         let filtered = [];
         for (const [name, tok] of Object.entries(tokDataByName)) {
-            if (name.trim().length && name.toLowerCase().includes(wanted) || tok.accessibleName?.toLowerCase().includes(wanted)) {
+            if (name.trim().length && name.toLowerCase().includes(wanted)
+                || tok.accessibleName?.toLowerCase().includes(wanted)
+                || tok.bytes.toLowerCase().includes(wanted))
+            {
                 filtered.push(tok)
             }
         }
@@ -37,7 +40,7 @@ module.exports = {
 
     async execute(interaction) {
         const tokWanted = interaction.options.getString('token');
-        const token = structuredClone(tokData[tokWanted] ?? tokDataByName[tokWanted] ?? null);
+        const token = structuredClone(tokData[tokWanted] ?? tokData['0x'+tokWanted.substring(2).toUpperCase()] ?? tokDataByName[tokWanted] ?? null);
         if (token) {
             const embeds = [];
             for (const s of token.syntaxes) {
