@@ -43,6 +43,69 @@ module.exports = {
         const token = structuredClone(tokData[tokWanted] ?? tokData['0x'+tokWanted.substring(2).toUpperCase()] ?? tokDataByName[tokWanted] ?? null);
         if (token) {
             const embeds = [];
+
+            {
+                const fields = [];
+
+                fields.push({
+                    name: 'Bytes',
+                    value: `**\`${token.bytes}\`**`,
+                    inline: true
+                });
+
+                if ('accessibleName' in token && token.accessibleName !== token.name)
+                {
+                    fields.push({
+                        name: 'Accessible',
+                        value: `**\`${token.accessibleName}\`**`,
+                        inline: true
+                    });
+                }
+
+                if ('since' in token || 'until' in token)
+                {
+                    let historyStr = '';
+                    const sinceUntilLines = [];
+                    const multipleSinceUntil = Object.keys(token.since ?? {}).length > 1 || Object.keys(token.until ?? {}).length > 1;
+                    // handle potential renamings...
+                    for (let [model, sinceVer] of Object.entries(token.since ?? [])) {
+                        let untilVer = token.until && token.until[model];
+                        if (untilVer) {
+                            let sinceNameInVer, untilNameInVer;
+                            [sinceVer, sinceNameInVer = token.name] = sinceVer.split('|');
+                            [untilVer, untilNameInVer = token.name] = untilVer.split('|');
+                            if (sinceVer === untilVer && sinceNameInVer !== untilNameInVer) {
+                                // console.log(`renaming detected in ${model}, at version ${sinceVer}: [${untilNameInVer}] => [${sinceNameInVer}]`);
+                                sinceUntilLines.push(`- **${model}** ${sinceVer}: Renamed \`${untilNameInVer.replace(/`/g, '\\`')}\` to \`${sinceNameInVer.replace(/`/g, '\\`')}\``);
+                                delete token.since[model];
+                                delete token.until[model];
+                            }
+                        }
+                    }
+                    // process each remaining item
+                    for (const [which, action] of Object.entries({ since: 'added', until: 'removed' })) {
+                        for (const [model, ver] of Object.entries(token[which] ?? [])) {
+                            const [actualVer, nameInVer = token.name] = ver.split('|');
+                            sinceUntilLines.push(`- **${model}** ${actualVer}: ` + (multipleSinceUntil ? `\`${nameInVer.replace(/`/g, '\\`')}\` ` : '') + (multipleSinceUntil ? action : capitalizeFirstLetter(action)));
+                        }
+                    }
+
+                    sinceUntilLines.sort((a, b) => a.localeCompare(b)).forEach((line) => { historyStr += line + '\n'; });
+
+                    fields.push({
+                        name: 'History',
+                        value: historyStr,
+                        inline: false
+                    })
+                }
+
+                embeds.push(new EmbedBuilder()
+                    .setColor('#5865F2')
+                    .setTitle(`\`${token.name}\``)
+                    .setURL(`https://ti-toolkit.github.io/tokens-wiki/tokens/${token.bytes}.html`)
+                    .addFields(...fields));
+            }
+
             for (const s of token.syntaxes) {
                 let args = "";
                 for (const arg of s.arguments) {
@@ -63,51 +126,15 @@ module.exports = {
                         inline: false
                     });
                 }
-                embeds.push(new EmbedBuilder()
-                    .setTitle(`\`${s.syntax}\``)
-                    .setDescription(s.description.length ? s.description : '(No description)')
-                    .addFields(...fields));
-            }
-            let body = `**Bytes**: **\`${token.bytes}\`**\n`;
-            body += `**Name**: **\`${token.name}\`**\n`;
-
-            if ('accessibleName' in token && token.accessibleName !== token.name)
-            {
-                body += `**Accessible**: **\`${token.accessibleName}\`**\n`;
-            }
-
-            if ('since' in token || 'until' in token)
-            {
-                body += `**History**:\n`;
-                const sinceUntilLines = [];
-                const multipleSinceUntil = Object.keys(token.since ?? {}).length > 1 || Object.keys(token.until ?? {}).length > 1;
-                // handle potential renamings...
-                for (let [model, sinceVer] of Object.entries(token.since ?? [])) {
-                    let untilVer = token.until && token.until[model];
-                    if (untilVer) {
-                        let sinceNameInVer, untilNameInVer;
-                        [sinceVer, sinceNameInVer = token.name] = sinceVer.split('|');
-                        [untilVer, untilNameInVer = token.name] = untilVer.split('|');
-                        if (sinceVer === untilVer && sinceNameInVer !== untilNameInVer) {
-                            // console.log(`renaming detected in ${model}, at version ${sinceVer}: [${untilNameInVer}] => [${sinceNameInVer}]`);
-                            sinceUntilLines.push(`- **${model}** ${sinceVer}: Renamed \`${untilNameInVer.replace(/`/g, '\\`')}\` to \`${sinceNameInVer.replace(/`/g, '\\`')}\``);
-                            delete token.since[model];
-                            delete token.until[model];
-                        }
-                    }
+                if (s.syntax !== token.name || s.description.length || fields.length) {
+                    embeds.push(new EmbedBuilder()
+                        .setTitle(`\`${s.syntax}\``)
+                        .setDescription(s.description.length ? s.description : null)
+                        .addFields(...fields));
                 }
-                // process each remaining item
-                for (const [which, action] of Object.entries({ since: 'added', until: 'removed' })) {
-                    for (const [model, ver] of Object.entries(token[which] ?? [])) {
-                        const [actualVer, nameInVer = token.name] = ver.split('|');
-                        sinceUntilLines.push(`- **${model}** ${actualVer}: ` + (multipleSinceUntil ? `\`${nameInVer.replace(/`/g, '\\`')}\` ` : '') + (multipleSinceUntil ? action : capitalizeFirstLetter(action)));
-                    }
-                }
-
-                sinceUntilLines.sort((a, b) => a.localeCompare(b)).forEach((line) => { body += line + '\n'; });
             }
 
-            await interaction.reply({ embeds: embeds, content: body });
+            await interaction.reply({ embeds: embeds });
         } else {
             await interaction.reply(`Could not find token "${tokWanted}"!`);
         }
