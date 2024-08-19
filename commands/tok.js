@@ -19,7 +19,11 @@ module.exports = {
             option.setName('token')
                 .setDescription('Name of the token, or its 0xNNNN hex bytes')
                 .setRequired(true)
-                .setAutocomplete(true)),
+                .setAutocomplete(true))
+        .addBooleanOption(option =>
+            option.setName('translations')
+                .setDescription('Whether to show token translations if available')
+                .setRequired(false)),
 
     async autocomplete(interaction) {
         const wanted = interaction.options.getFocused().toLowerCase();
@@ -40,6 +44,7 @@ module.exports = {
 
     async execute(interaction) {
         const tokWanted = interaction.options.getString('token');
+        const showTranslations = interaction.options.getBoolean('translations');
         const token = structuredClone(tokData[tokWanted] ?? tokData['0x'+tokWanted.substring(2).toUpperCase()] ?? tokDataByName[tokWanted] ?? null);
         if (token) {
             const embeds = [];
@@ -60,6 +65,24 @@ module.exports = {
                         value: `**\`${token.accessibleName}\`**`,
                         inline: true
                     });
+                }
+
+                if (showTranslations && 'localizations' in token)
+                {
+                    let str = '';
+                    for (const [lang, name] of Object.entries(token.localizations))
+                    {
+                        const langIndicator = ({ FR:'🇫🇷' })[lang] ?? lang;
+                        str += `**${langIndicator}** \`${name}\`\n`;
+                    }
+                    str = str.trim();
+                    if (str.length) {
+                        fields.push({
+                            name: 'Translations',
+                            value: str,
+                            inline: false
+                        });
+                    }
                 }
 
                 if ('since' in token || 'until' in token)
