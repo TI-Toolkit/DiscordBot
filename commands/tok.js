@@ -6,9 +6,14 @@ const capitalizeFirstLetter = function(str) {
 }
 
 const tokDataByName = {};
+const tokBytesByAccessibleName = {};
+
 for (const [bytes, data] of Object.entries(tokData)) {
     data.bytes = bytes;
     tokDataByName[data.name] = data;
+    if (data?.accessibleName) {
+        tokBytesByAccessibleName[data.accessibleName] = bytes;
+    }
 }
 
 module.exports = {
@@ -45,7 +50,8 @@ module.exports = {
     async execute(interaction) {
         const tokWanted = interaction.options.getString('token');
         const showTranslations = interaction.options.getBoolean('translations');
-        const token = structuredClone(tokData[tokWanted] ?? tokData['0x'+tokWanted.substring(2).toUpperCase()] ?? tokDataByName[tokWanted] ?? null);
+        let token = structuredClone(tokData[tokWanted] ?? tokData['0x'+tokWanted.substring(2).toUpperCase()] ?? tokData[tokBytesByAccessibleName[tokWanted]]
+                                    ?? tokDataByName[tokWanted] ?? null);
         if (token) {
             const embeds = [];
 
