@@ -83,22 +83,28 @@ module.exports = {
 #include <tice.h>
 typedef uint8_t u8;
 typedef int8_t i8;
+typedef int8_t s8;
 typedef uint16_t u16;
 typedef int16_t i16;
+typedef int16_t s16;
 typedef uint24_t u24;
 typedef int24_t i24;
+typedef int24_t s24;
 typedef uint32_t u32;
 typedef int32_t i32;
+typedef int32_t s32;
 typedef uint48_t u48;
 typedef int48_t i48;
+typedef int48_t s48;
 typedef uint64_t u64;
 typedef int64_t i64;
+typedef int64_t s64;
 ` + code;
         }
         fs.writeFileSync(tmpFile, code);
 
         let asmOutput = "";
-        const cmd = `/home/pbbot/debchroot/opt/llvm-project/build/bin/clang -target ${target} -nostdinc -isystem /home/pbbot/debchroot/opt/CEdev/include -fno-threadsafe-statics -Xclang -fforce-mangle-main-argc-argv -w -S -O${optLevel} -x${lang} ${tmpFile} -o -`;
+        const cmd = `/home/pbbot/debchroot/opt/CEdev/bin/test/ez80-clang -target ${target} -nostdinc -isystem /home/pbbot/debchroot/opt/CEdev/include -fno-threadsafe-statics -Xclang -fforce-mangle-main-argc-argv -w -S -O${optLevel} -x${lang} ${tmpFile} -o -`;
         exec(cmd, (err, stdout, stderr) => {
             //if (stdout.length) console.log('[clangBot] stdout is:' + stdout);
             if (stderr.length) console.log('[clangBot] stderr is:' + stderr);
@@ -109,7 +115,7 @@ typedef int64_t i64;
             asmOutput = asmOutput.replaceAll(`\tsection\t.text,"ax",@progbits\n`, '')
                 .replaceAll(`\tsection\t.data,"aw",@progbits\n`, '')
                 .replaceAll(`\tassume\tadl = 1\n`, '')
-                .replaceAll(`\tident\t"clang version 15.0.0 (https://github.com/jacobly0/llvm-project.git 005a99ce2569373524bd881207aa4a1e98a2b238)"\n`, '')
+                .replaceAll(`\tident\t"clang version 15.0.0 (https://github.com/CE-Programming/llvm-project 9257fd038e0730d7b13ae4ee677745670f077817)"\n`, '')
                 .replaceAll(`\textern\t__Unwind_SjLj_Register
 \textern\t__Unwind_SjLj_Unregister\n`, '');
             fs.unlinkSync(tmpFile);
