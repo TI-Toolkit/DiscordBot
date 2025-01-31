@@ -117,12 +117,12 @@ typedef int64_t s64;
                 .replaceAll(`\tassume\tadl = 1\n`, '')
                 .replaceAll(`\tident\t"clang version 15.0.0 (https://github.com/CE-Programming/llvm-project 9257fd038e0730d7b13ae4ee677745670f077817)"\n`, '')
                 .replaceAll(`\textern\t__Unwind_SjLj_Register
-\textern\t__Unwind_SjLj_Unregister\n`, '');
+\textern\t__Unwind_SjLj_Unregister\n`, '').trim();
             fs.unlinkSync(tmpFile);
             try {
                 if (asmOutput.length) {
                     const msgWithoutAsm = `Compiling ${lang} in \`-O${optLevel}\` for ${target}: \`\`\`cpp\n${origCode}\`\`\``;
-                    const asmStr = asmOutput.trim().substring(0, 1830) + " [...] ";
+                    const asmStr = asmOutput.length > 1830 ? (asmOutput.substring(0, 1830) + " [...] ") : asmOutput;
                     await interaction.editReply(`${msgWithoutAsm}\n\`\`\`avrasm\n${asmStr}\`\`\``);
                 } else {
                     await interaction.editReply(`Error compiling the code: \`${origCode}\``);

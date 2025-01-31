@@ -58,13 +58,13 @@ module.exports = {
             if (stderr.length) console.log('[zdisBot] stderr is:' + stderr);
 
             if (err) console.log('[zdisBot] error is:' + err);
-            else asmOutput = stdout.replaceAll(/^(    |\t)/mg, '').replaceAll('    ', '\t');
+            else asmOutput = stdout.replaceAll(/^(    |\t)/mg, '').replaceAll('    ', '\t').trim();
 
             fs.unlinkSync(tmpFile);
             try {
                 if (asmOutput.length) {
                     const msgWithoutAsm = `\`${arch}\` disassembly of \`${bytes}\`:`;
-                    const asmStr = asmOutput.trim().substring(0, 1850) + " [...] ";
+                    const asmStr = asmOutput.length > 1830 ? (asmOutput.substring(0, 1830) + " [...] ") : asmOutput;
                     await interaction.editReply(`${msgWithoutAsm}\n\`\`\`avrasm\n${asmStr}\`\`\``);
                 } else {
                     await interaction.editReply(`Error getting the disasm`);
