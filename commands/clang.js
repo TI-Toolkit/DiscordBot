@@ -105,7 +105,7 @@ typedef int64_t s64;
 
         let asmOutput = "";
         const cmd = `/home/pbbot/debchroot/opt/CEdev/bin/test/ez80-clang -target ${target} -nostdinc -isystem /home/pbbot/debchroot/opt/CEdev/include -fno-threadsafe-statics -Xclang -fforce-mangle-main-argc-argv -w -S -O${optLevel} -x${lang} ${tmpFile} -o -`;
-        exec(cmd, (err, stdout, stderr) => {
+        exec(cmd, async (err, stdout, stderr) => {
             //if (stdout.length) console.log('[clangBot] stdout is:' + stdout);
             if (stderr.length) console.log('[clangBot] stderr is:' + stderr);
 
@@ -119,10 +119,16 @@ typedef int64_t s64;
                 .replaceAll(`\textern\t__Unwind_SjLj_Register
 \textern\t__Unwind_SjLj_Unregister\n`, '');
             fs.unlinkSync(tmpFile);
-            if (asmOutput.length) {
-                interaction.editReply(`Compiling ${lang} in \`-O${optLevel}\` for ${target}: \`\`\`cpp\n${origCode}\`\`\`\n\`\`\`avrasm\n${asmOutput.trim()}\`\`\``);
-            } else {
-                interaction.editReply(`Error compiling the code: \`${origCode}\``);
+            try {
+                if (asmOutput.length) {
+                    const msgWithoutAsm = `Compiling ${lang} in \`-O${optLevel}\` for ${target}: \`\`\`cpp\n${origCode}\`\`\``;
+                    const asmStr = asmOutput.trim().substring(0, 1830) + " [...] ";
+                    await interaction.editReply(`${msgWithoutAsm}\n\`\`\`avrasm\n${asmStr}\`\`\``);
+                } else {
+                    await interaction.editReply(`Error compiling the code: \`${origCode}\``);
+                }
+            } catch (e) {
+                await interaction.editReply(`Error ...`);
             }
         });
     },
