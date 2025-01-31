@@ -53,7 +53,7 @@ module.exports = {
         let asmOutput = "";
         const cmd = `./zdis/cli --${arch} --${destStyle} --mnemonic-tab ${tmpFile}`;
 
-        exec(cmd, (err, stdout, stderr) => {
+        exec(cmd, async (err, stdout, stderr) => {
             // if (stdout.length) console.log('[zdisBot] stdout is:' + stdout);
             if (stderr.length) console.log('[zdisBot] stderr is:' + stderr);
 
@@ -61,10 +61,16 @@ module.exports = {
             else asmOutput = stdout.replaceAll(/^(    |\t)/mg, '').replaceAll('    ', '\t');
 
             fs.unlinkSync(tmpFile);
-            if (asmOutput.length) {
-                interaction.editReply(`\`${arch}\` disassembly of \`${bytes}\`:\n\`\`\`avrasm\n${asmOutput.trimEnd()}\`\`\``);
-            } else {
-                interaction.editReply(`Error getting the disasm`);
+            try {
+                if (asmOutput.length) {
+                    const msgWithoutAsm = `\`${arch}\` disassembly of \`${bytes}\`:`;
+                    const asmStr = asmOutput.trim().substring(0, 1850) + " [...] ";
+                    await interaction.editReply(`${msgWithoutAsm}\n\`\`\`avrasm\n${asmStr}\`\`\``);
+                } else {
+                    await interaction.editReply(`Error getting the disasm`);
+                }
+            } catch (e) {
+                await interaction.editReply(`Error ...`);
             }
         });
     },
