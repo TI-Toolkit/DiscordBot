@@ -80,6 +80,16 @@ module.exports = {
         const origCode = code;
         if (target === 'ez80') {
             code = `#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <math.h>
+#include <float.h>
+#include <limits.h>
+#include <string.h>
+#include <alloca.h>
+#include <byteswap.h>
+#include <ctype.h>
 #include <tice.h>
 typedef uint8_t u8;
 typedef int8_t i8;
