@@ -29,6 +29,9 @@ module.exports = {
                     { name: '1',  value: '1' },
                     { name: '2',  value: '2' },
                     { name: '3',  value: '3' },
+                    { name: 'fast',  value: 'fast' },
+                    { name: 'g',  value: 'g' },
+                    { name: 's',  value: 's' },
                     { name: 'z',  value: 'z' }
                 ))
         .addStringOption(option =>
