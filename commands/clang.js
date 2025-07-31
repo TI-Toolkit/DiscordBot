@@ -139,7 +139,7 @@ typedef int64_t s64;
             asmOutput = asmOutput.replaceAll(`\tsection\t.text,"ax",@progbits\n`, '')
                 .replaceAll(`\tsection\t.data,"aw",@progbits\n`, '')
                 .replaceAll(`\tassume\tadl = 1\n`, '')
-                .replaceAll(`\tident\t"clang version 15.0.0 (https://github.com/CE-Programming/llvm-project 9257fd038e0730d7b13ae4ee677745670f077817)"\n`, '')
+                .replaceAll(`\tident\t"clang version 15.0.7 (https://github.com/jacobly0/llvm-project.git db91fd729cd188daf925aaf5043a6ca0d3660655)"\n`, '')
                 .replaceAll(`\textern\t__Unwind_SjLj_Register
 \textern\t__Unwind_SjLj_Unregister\n`, '').trim();
 
