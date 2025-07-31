@@ -12,6 +12,17 @@ function makeTmpFile(prefix, suffix, tmpdir) {
     return path.join(tmpdir, prefix + crypto.randomBytes(16).toString('hex') + suffix);
 }
 
+// Somewhere in a util file or something
+function replyOrFollowUp(interaction, ...args) {
+    if (interaction.replied) {
+        return interaction.followUp(...args);
+    }
+    if (interaction.deferred) {  // Currently behaves the same but could change in the future
+        return interaction.editReply(...args);
+    }
+    return interaction.reply(...args);
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clang')
@@ -131,17 +142,22 @@ typedef int64_t s64;
                 .replaceAll(`\tident\t"clang version 15.0.0 (https://github.com/CE-Programming/llvm-project 9257fd038e0730d7b13ae4ee677745670f077817)"\n`, '')
                 .replaceAll(`\textern\t__Unwind_SjLj_Register
 \textern\t__Unwind_SjLj_Unregister\n`, '').trim();
-            fs.unlinkSync(tmpFile);
+
             try {
                 if (asmOutput.length) {
                     const msgWithoutAsm = `Compiling ${lang} in \`-O${optLevel}\` for ${target}: \`\`\`cpp\n${origCode}\`\`\``;
-                    const asmStr = asmOutput.length > 1830 ? (asmOutput.substring(0, 1830) + " [...] ") : asmOutput;
-                    await interaction.editReply(`${msgWithoutAsm}\n\`\`\`avrasm\n${asmStr}\`\`\``);
+                    let finalMsg = `${msgWithoutAsm}\n\`\`\`avrasm\n${asmOutput}\`\`\``;
+                    if (finalMsg.length >= 2000) {
+                        finalMsg = finalMsg.substring(0, 1990) + " [...] ```";
+                    }
+                    await replyOrFollowUp(interaction, finalMsg);
                 } else {
-                    await interaction.editReply(`Error compiling the code: \`${origCode}\``);
+                    await replyOrFollowUp(interaction, `Error compiling the code: \`${origCode}\``);
                 }
             } catch (e) {
-                await interaction.editReply(`Error ...`);
+                fs.unlinkSync(tmpFile);
+                console.error(e);
+                await replyOrFollowUp(interaction, `Error ...`);
             }
         });
     },
